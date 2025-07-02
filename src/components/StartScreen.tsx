@@ -1,5 +1,9 @@
-import React, { useState } from 'react';
-import { Play } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Play, Loader2 } from 'lucide-react';
+import { useWeb3 } from '../hooks/useWeb3';
+import FaucetInfo from './FaucetInfo';
+import TreasuryInfo from './TreasuryInfo';
+import WalletManager from './WalletManager';
 
 interface StartScreenProps {
   onStart: (playerName: string) => void;
@@ -7,8 +11,44 @@ interface StartScreenProps {
 
 export default function StartScreen({ onStart }: StartScreenProps) {
   const [playerName, setPlayerName] = useState('');
-  const [walletConnected, setWalletConnected] = useState(false);
   const [paymentMade, setPaymentMade] = useState(false);
+  const [isPayingFee, setIsPayingFee] = useState(false);
+  
+  const { 
+    connected, 
+    balance, 
+    payEntryFee, 
+    payingEntryFee,
+    refreshBalance 
+  } = useWeb3();
+
+  // Entry fee in GOR (Gorbagana tokens)
+  const ENTRY_FEE = 0.01; // 0.01 GOR
+
+  useEffect(() => {
+    if (connected) {
+      refreshBalance();
+    }
+  }, [connected, refreshBalance]);
+
+  const handlePayFee = async () => {
+    if (!connected) return;
+    
+    setIsPayingFee(true);
+    try {
+      const success = await payEntryFee(ENTRY_FEE);
+      if (success) {
+        setPaymentMade(true);
+      } else {
+        // Handle payment failure
+        console.error('Payment failed');
+      }
+    } catch (error) {
+      console.error('Error during payment:', error);
+    } finally {
+      setIsPayingFee(false);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -17,19 +57,22 @@ export default function StartScreen({ onStart }: StartScreenProps) {
     onStart(name);
   };
 
+  const canPlay = connected && paymentMade;
+  const hasInsufficientBalance = connected && balance !== null && balance < ENTRY_FEE;
+
   return (
     <div className="relative min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-b from-blue-600 to-black overflow-hidden">
       {/* Floating top nav bar */}
-      <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-40 flex gap-6 bg-blue-800/80 rounded-full px-8 py-3 shadow-lg backdrop-blur-md border border-blue-300/30">
+      {/* <nav className="fixed top-6 left-1/2 -translate-x-1/2 z-40 flex gap-6 bg-blue-800/80 rounded-full px-8 py-3 shadow-lg backdrop-blur-md border border-blue-300/30">
         <a href="#game" className="text-white font-semibold hover:text-yellow-300 transition">Game</a>
         <a href="#leaderboard" className="text-white font-semibold hover:text-yellow-300 transition">Leaderboard</a>
         <a href="#connect" className="text-white font-semibold hover:text-yellow-300 transition">Connect</a>
         <a href="#about" className="text-white font-semibold hover:text-yellow-300 transition">About</a>
-      </nav>
+      </nav> */}
       {/* Main content */}
       <div className="flex flex-col items-center justify-center flex-1 w-full pt-32 pb-16">
         {/* Headline */}
-        <h1 className="text-5xl md:text-7xl font-extrabold text-white text-center mb-4 tracking-tight" style={{textShadow: '0 4px 32px #0008'}}>Play Slither<span className="text-yellow-300">.io</span> Online</h1>
+        <h1 className="text-5xl md:text-7xl font-extrabold text-white text-center mb-4 tracking-tight" style={{textShadow: '0 4px 32px #0008'}}>SnakeRush<span className="text-yellow-300">.io</span> Online</h1>
         <p className="text-xl md:text-2xl text-blue-100 text-center mb-10">Eat orbs. Grow your snake. Outsmart everyone.</p>
         {/* Hero visual: stylized snake SVG */}
         <div className="mb-12">
@@ -49,27 +92,44 @@ export default function StartScreen({ onStart }: StartScreenProps) {
         {/* Pay to Play Section */}
         <div className="flex flex-col items-center gap-4 w-full max-w-xs mb-8">
           <div className="w-full bg-blue-900/70 border border-blue-300/30 rounded-xl px-5 py-4 mb-2 text-center">
-            <p className="text-blue-100 mb-3 text-base">Pay the entry fee to join the game!</p>
-            {!walletConnected ? (
-              <button
-                className="w-full bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 rounded-full transition-all duration-150 mb-2"
-                onClick={() => setWalletConnected(true)}
-                type="button"
-              >
-                Connect Wallet
-              </button>
+            <p className="text-blue-100 mb-3 text-base">Connect wallet and pay entry fee to play!</p>
+            
+            {!connected ? (
+              <WalletManager showDisconnect={false} />
             ) : !paymentMade ? (
-              <button
-                className="w-full bg-yellow-300 hover:bg-yellow-200 text-blue-900 font-bold py-2 rounded-full transition-all duration-150 mb-2"
-                onClick={() => setPaymentMade(true)}
-                type="button"
-              >
-                Pay Entry Fee (0.01 ETH)
-              </button>
+              <div className="space-y-3">
+                <WalletManager />
+                {hasInsufficientBalance ? (
+                  <div className="text-red-400 text-sm mb-3">
+                    Insufficient balance! You need at least {ENTRY_FEE} GOR to play.
+                  </div>
+                ) : (
+                  <button
+                    className={`w-full bg-yellow-300 hover:bg-yellow-200 text-blue-900 font-bold py-2 rounded-full transition-all duration-150 ${
+                      payingEntryFee || isPayingFee ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                    onClick={handlePayFee}
+                    disabled={payingEntryFee || isPayingFee}
+                    type="button"
+                  >
+                    {payingEntryFee || isPayingFee ? (
+                      <div className="flex items-center justify-center gap-2">
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                        Processing...
+                      </div>
+                    ) : (
+                      `Pay Entry Fee (${ENTRY_FEE} GOR)`
+                    )}
+                  </button>
+                )}
+              </div>
             ) : (
-              <div className="w-full bg-green-500 text-white font-bold py-2 rounded-full mb-2">Payment Complete!</div>
+              <div className="w-full bg-green-500 text-white font-bold py-2 rounded-full mb-2">
+                ✅ Payment Complete!
+              </div>
             )}
           </div>
+          <TreasuryInfo />
           {/* Name input below headline, minimal style */}
           <form onSubmit={handleSubmit} className="flex flex-col items-center gap-4 w-full">
             <input
@@ -80,12 +140,12 @@ export default function StartScreen({ onStart }: StartScreenProps) {
               placeholder="Enter your snake name..."
               maxLength={20}
               className="w-full px-5 py-3 rounded-full bg-blue-900/70 border border-blue-300/30 text-white text-lg text-center focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:border-transparent placeholder-blue-200"
-              disabled={!paymentMade}
+              disabled={!canPlay}
             />
             <button
               type="submit"
-              className={`w-full bg-yellow-300 hover:bg-yellow-200 text-blue-900 font-bold text-lg py-3 rounded-full transition-all duration-150 shadow-md focus:outline-none focus:ring-2 focus:ring-yellow-400 ${!paymentMade ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={!paymentMade}
+              className={`w-full bg-yellow-300 hover:bg-yellow-200 text-blue-900 font-bold text-lg py-3 rounded-full transition-all duration-150 shadow-md focus:outline-none focus:ring-2 focus:ring-yellow-400 ${!canPlay ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={!canPlay}
             >
               <Play className="w-5 h-5 inline-block mr-2" />
               Start Playing
@@ -97,6 +157,7 @@ export default function StartScreen({ onStart }: StartScreenProps) {
       <style>{`
         body { background: linear-gradient(to bottom, #2563eb 0%, #000 100%) !important; }
       `}</style>
+      <FaucetInfo />
     </div>
   );
 }
