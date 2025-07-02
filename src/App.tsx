@@ -1,12 +1,13 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import GameCanvas from './components/GameCanvas';
 import Leaderboard from './components/Leaderboard';
 import MiniMap from './components/MiniMap';
 import GameUI from './components/GameUI';
 import StartScreen from './components/StartScreen';
 import DeathScreen from './components/DeathScreen';
+import WalletStatus from './components/WalletStatus';
 import { useGameLoop } from './hooks/useGameLoop';
-import { GameState, Snake, Player } from './types/game';
+import { GameState, Snake, Player, Orb } from './types/game';
 import {
   createSnake,
   createOrb,
@@ -33,12 +34,19 @@ function App() {
 
   const [gameStarted, setGameStarted] = useState(false);
   const [showDeathScreen, setShowDeathScreen] = useState(false);
-  const [deathStats, setDeathStats] = useState({ score: 0, length: 0, rank: 1 });
+  const [deathStats, setDeathStats] = useState({ 
+    score: 0, 
+    length: 0, 
+    rank: 1, 
+    gameStartTime: 0,
+    gameLength: 0
+  });
   const [players, setPlayers] = useState<Player[]>([]);
 
   // FIXED: Better mouse direction tracking
   const mouseDirection = useRef({ x: 0, y: 0, angle: 0 });
   const boosting = useRef(false);
+  const gameStartTime = useRef(0);
 
   // Initialize game
   const initializeGame = useCallback((playerName: string) => {
@@ -81,6 +89,7 @@ function App() {
 
     setGameStarted(true);
     setShowDeathScreen(false);
+    gameStartTime.current = Date.now();
   }, []);
 
   // FIXED: Improved mouse movement handling
@@ -130,15 +139,15 @@ function App() {
           let targetDirection = snake.direction + (Math.random() - 0.5) * 0.3;
 
           // Find nearest orb with better AI logic
-          let nearestOrb = null;
+          let nearestOrb: Orb | null = null;
           let nearestDistance = Infinity;
-          newState.orbs.forEach(orb => {
+          for (const orb of newState.orbs) {
             const distance = Math.sqrt((orb.x - head.x) ** 2 + (orb.y - head.y) ** 2);
             if (distance < nearestDistance && distance < 150) {
               nearestDistance = distance;
               nearestOrb = orb;
             }
-          });
+          }
 
           if (nearestOrb) {
             targetDirection = Math.atan2(nearestOrb.y - head.y, nearestOrb.x - head.x);
@@ -199,10 +208,13 @@ function App() {
         // Check if player died
         if (snake.id === newState.playerId) {
           const rank = newState.snakes.filter(s => s.alive && s.score > snake.score).length + 1;
+          const gameLength = (Date.now() - gameStartTime.current) / 1000;
           setDeathStats({
             score: snake.score,
             length: snake.segments.length,
-            rank
+            rank,
+            gameStartTime: gameStartTime.current,
+            gameLength
           });
           setShowDeathScreen(true);
         }
@@ -249,6 +261,7 @@ function App() {
     // Reset mouse direction
     mouseDirection.current = { x: 0, y: 0, angle: 0 };
     boosting.current = false;
+    gameStartTime.current = 0;
   }, []);
 
   const currentPlayer = gameState.snakes.find(s => s.id === gameState.playerId);
@@ -275,12 +288,15 @@ function App() {
       
       <Leaderboard players={players} currentPlayerId={gameState.playerId} />
       <MiniMap gameState={gameState} />
+      <WalletStatus />
 
       {showDeathScreen && (
         <DeathScreen
           score={deathStats.score}
           length={deathStats.length}
           rank={deathStats.rank}
+          totalPlayers={players.length}
+          gameLength={deathStats.gameLength}
           onRestart={handleRestart}
         />
       )}
