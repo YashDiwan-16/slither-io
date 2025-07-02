@@ -7,9 +7,12 @@ interface StartScreenProps {
 
 export default function StartScreen({ onStart }: StartScreenProps) {
   const [playerName, setPlayerName] = useState('');
+  const [walletConnected, setWalletConnected] = useState(false);
+  const [paymentMade, setPaymentMade] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!paymentMade) return;
     const name = playerName.trim() || 'Anonymous Snake';
     onStart(name);
   };
@@ -43,25 +46,52 @@ export default function StartScreen({ onStart }: StartScreenProps) {
             <ellipse cx="270" cy="104" rx="10" ry="5" fill="#f87171" />
           </svg>
         </div>
-        {/* Name input below headline, minimal style */}
-        <form onSubmit={handleSubmit} className="flex flex-col items-center gap-4 w-full max-w-xs mb-8">
-          <input
-            type="text"
-            id="playerName"
-            value={playerName}
-            onChange={(e) => setPlayerName(e.target.value)}
-            placeholder="Enter your snake name..."
-            maxLength={20}
-            className="w-full px-5 py-3 rounded-full bg-blue-900/70 border border-blue-300/30 text-white text-lg text-center focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:border-transparent placeholder-blue-200"
-          />
-          <button
-            type="submit"
-            className="w-full bg-yellow-300 hover:bg-yellow-200 text-blue-900 font-bold text-lg py-3 rounded-full transition-all duration-150 shadow-md focus:outline-none focus:ring-2 focus:ring-yellow-400"
-          >
-            <Play className="w-5 h-5 inline-block mr-2" />
-            Start Playing
-          </button>
-        </form>
+        {/* Pay to Play Section */}
+        <div className="flex flex-col items-center gap-4 w-full max-w-xs mb-8">
+          <div className="w-full bg-blue-900/70 border border-blue-300/30 rounded-xl px-5 py-4 mb-2 text-center">
+            <p className="text-blue-100 mb-3 text-base">Pay the entry fee to join the game!</p>
+            {!walletConnected ? (
+              <button
+                className="w-full bg-blue-500 hover:bg-blue-400 text-white font-bold py-2 rounded-full transition-all duration-150 mb-2"
+                onClick={() => setWalletConnected(true)}
+                type="button"
+              >
+                Connect Wallet
+              </button>
+            ) : !paymentMade ? (
+              <button
+                className="w-full bg-yellow-300 hover:bg-yellow-200 text-blue-900 font-bold py-2 rounded-full transition-all duration-150 mb-2"
+                onClick={() => setPaymentMade(true)}
+                type="button"
+              >
+                Pay Entry Fee (0.01 ETH)
+              </button>
+            ) : (
+              <div className="w-full bg-green-500 text-white font-bold py-2 rounded-full mb-2">Payment Complete!</div>
+            )}
+          </div>
+          {/* Name input below headline, minimal style */}
+          <form onSubmit={handleSubmit} className="flex flex-col items-center gap-4 w-full">
+            <input
+              type="text"
+              id="playerName"
+              value={playerName}
+              onChange={(e) => setPlayerName(e.target.value)}
+              placeholder="Enter your snake name..."
+              maxLength={20}
+              className="w-full px-5 py-3 rounded-full bg-blue-900/70 border border-blue-300/30 text-white text-lg text-center focus:outline-none focus:ring-2 focus:ring-yellow-300 focus:border-transparent placeholder-blue-200"
+              disabled={!paymentMade}
+            />
+            <button
+              type="submit"
+              className={`w-full bg-yellow-300 hover:bg-yellow-200 text-blue-900 font-bold text-lg py-3 rounded-full transition-all duration-150 shadow-md focus:outline-none focus:ring-2 focus:ring-yellow-400 ${!paymentMade ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={!paymentMade}
+            >
+              <Play className="w-5 h-5 inline-block mr-2" />
+              Start Playing
+            </button>
+          </form>
+        </div>
       </div>
       {/* Minimal custom style for nav shadow */}
       <style>{`
