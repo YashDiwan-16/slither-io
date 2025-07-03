@@ -7,9 +7,10 @@ import WalletManager from './WalletManager';
 
 interface StartScreenProps {
   onStart: (playerName: string) => void;
+  onShowTournament?: () => void;
 }
 
-export default function StartScreen({ onStart }: StartScreenProps) {
+export default function StartScreen({ onStart, onShowTournament }: StartScreenProps) {
   const [playerName, setPlayerName] = useState('');
   const [paymentMade, setPaymentMade] = useState(false);
   const [isPayingFee, setIsPayingFee] = useState(false);
@@ -150,6 +151,17 @@ export default function StartScreen({ onStart }: StartScreenProps) {
               <Play className="w-5 h-5 inline-block mr-2" />
               Start Playing
             </button>
+            
+            {/* Tournament Button */}
+            {connected && onShowTournament && (
+              <button
+                type="button"
+                onClick={onShowTournament}
+                className="w-full bg-purple-600 hover:bg-purple-500 text-white font-bold text-lg py-3 rounded-full transition-all duration-150 shadow-md focus:outline-none focus:ring-2 focus:ring-purple-400"
+              >
+                🏆 Join Live Tournament
+              </button>
+            )}
           </form>
         </div>
       </div>
