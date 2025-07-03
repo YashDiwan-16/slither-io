@@ -6,7 +6,6 @@ import GameUI from './components/GameUI';
 import StartScreen from './components/StartScreen';
 import DeathScreen from './components/DeathScreen';
 import WalletStatus from './components/WalletStatus';
-import LiveTournament from './components/LiveTournament';
 import { useGameLoop } from './hooks/useGameLoop';
 import { GameState, Snake, Player, Orb } from './types/game';
 import {
@@ -35,8 +34,6 @@ function App() {
 
   const [gameStarted, setGameStarted] = useState(false);
   const [showDeathScreen, setShowDeathScreen] = useState(false);
-  const [showTournament, setShowTournament] = useState(false);
-  const [currentTournamentId, setCurrentTournamentId] = useState<string | null>(null);
   const [deathStats, setDeathStats] = useState({ 
     score: 0, 
     length: 0, 
@@ -267,23 +264,10 @@ function App() {
     gameStartTime.current = 0;
   }, []);
 
-  // Tournament handler
-  const handleJoinTournament = useCallback((tournamentId: string) => {
-    setCurrentTournamentId(tournamentId);
-    setShowTournament(false);
-    // Start game in tournament mode
-    initializeGame('Tournament Player');
-  }, [initializeGame]);
-
   const currentPlayer = gameState.snakes.find(s => s.id === gameState.playerId);
 
-  // Show tournament screen
-  if (showTournament) {
-    return <LiveTournament onJoinTournament={handleJoinTournament} />;
-  }
-
   if (!gameStarted) {
-    return <StartScreen onStart={initializeGame} onShowTournament={() => setShowTournament(true)} />;
+    return <StartScreen onStart={initializeGame} />;
   }
 
   return (
