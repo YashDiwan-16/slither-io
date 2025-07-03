@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useContext } from 'react';
 import { Settings, X, Wallet, Volume2, VolumeX, Info } from 'lucide-react';
 import WalletManager from './WalletManager';
+import { MusicContext } from '../providers/MusicProvider';
 
 interface GameSettingsProps {
   onClose: () => void;
@@ -10,6 +11,7 @@ interface GameSettingsProps {
 
 export default function GameSettings({ onClose, difficulty, setDifficulty }: GameSettingsProps) {
   const [activeTab, setActiveTab] = useState<'wallet' | 'audio' | 'about'>('wallet');
+  const music = useContext(MusicContext);
 
   return (
     <div className="absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
@@ -79,20 +81,33 @@ export default function GameSettings({ onClose, difficulty, setDifficulty }: Gam
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-gray-300">Sound Effects</span>
-                  <button className="flex items-center gap-2 text-green-400">
+                  <button className="flex items-center gap-2 text-green-400" disabled>
                     <Volume2 className="w-4 h-4" />
                     <span className="text-sm">On</span>
                   </button>
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-gray-300">Background Music</span>
-                  <button className="flex items-center gap-2 text-red-400">
-                    <VolumeX className="w-4 h-4" />
-                    <span className="text-sm">Off</span>
+                  <button
+                    className={`flex items-center gap-2 ${music.playing ? 'text-green-400' : 'text-red-400'}`}
+                    onClick={music.toggle}
+                  >
+                    {music.playing ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                    <span className="text-sm">{music.playing ? 'On' : 'Off'}</span>
                   </button>
                 </div>
-                <div className="text-xs text-gray-400 mt-2">
-                  Audio features coming soon!
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-gray-300">Volume</span>
+                  <input
+                    type="range"
+                    min={0}
+                    max={1}
+                    step={0.01}
+                    value={music.volume}
+                    onChange={e => music.setVolume(Number(e.target.value))}
+                    className="w-32 accent-blue-500"
+                  />
+                  <span className="text-gray-300 text-xs">{Math.round(music.volume * 100)}%</span>
                 </div>
               </div>
             </div>
