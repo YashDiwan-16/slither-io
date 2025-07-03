@@ -1,11 +1,14 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { Toaster } from 'sonner';
 import GameCanvas from './components/GameCanvas';
 import Leaderboard from './components/Leaderboard';
 import MiniMap from './components/MiniMap';
 import GameUI from './components/GameUI';
 import StartScreen from './components/StartScreen';
-import DeathScreen from './components/DeathScreen';
+import EnhancedDeathScreen from './components/EnhancedDeathScreen';
 import WalletStatus from './components/WalletStatus';
+import RewardPoolStatus from './components/RewardPoolStatus';
+import AchievementSystem from './components/AchievementSystem';
 import { useGameLoop } from './hooks/useGameLoop';
 import { GameState, Snake, Player, Orb } from './types/game';
 import {
@@ -18,6 +21,7 @@ import {
   updateParticles,
   WORLD_SIZE
 } from './utils/gameUtils';
+import { rewardService } from './services/rewardService';
 
 const CANVAS_WIDTH = window.innerWidth;
 const CANVAS_HEIGHT = window.innerHeight;
@@ -42,6 +46,9 @@ function App() {
     gameLength: 0
   });
   const [players, setPlayers] = useState<Player[]>([]);
+  // New state for reward system
+  const [playerName, setPlayerName] = useState('');
+  const [gameId, setGameId] = useState('');
 
   // FIXED: Better mouse direction tracking
   const mouseDirection = useRef({ x: 0, y: 0, angle: 0 });
@@ -49,12 +56,16 @@ function App() {
   const gameStartTime = useRef(0);
 
   // Initialize game
-  const initializeGame = useCallback((playerName: string) => {
+  const initializeGame = useCallback((playerNameInput: string) => {
     const playerId = Math.random().toString(36).substr(2, 9);
+    const newGameId = Math.random().toString(36).substr(2, 12);
     const startX = WORLD_SIZE / 2 + (Math.random() - 0.5) * 500;
     const startY = WORLD_SIZE / 2 + (Math.random() - 0.5) * 500;
     
-    const playerSnake = createSnake(playerId, playerName, startX, startY);
+    setPlayerName(playerNameInput);
+    setGameId(newGameId);
+    
+    const playerSnake = createSnake(playerId, playerNameInput, startX, startY);
     
     // Create AI snakes
     const aiSnakes: Snake[] = [];
@@ -90,6 +101,9 @@ function App() {
     setGameStarted(true);
     setShowDeathScreen(false);
     gameStartTime.current = Date.now();
+    
+    // Add entry fee to reward pool
+    rewardService.addToPool(0.01); // Entry fee amount
   }, []);
 
   // FIXED: Improved mouse movement handling
@@ -289,17 +303,28 @@ function App() {
       <Leaderboard players={players} currentPlayerId={gameState.playerId} />
       <MiniMap gameState={gameState} />
       <WalletStatus />
+      <RewardPoolStatus />
+      <AchievementSystem 
+        score={currentPlayer?.score || 0}
+        rank={players.find(p => p.id === gameState.playerId)?.rank || 1}
+        gameLength={(Date.now() - gameStartTime.current) / 1000}
+        gamesPlayed={1}
+      />
 
       {showDeathScreen && (
-        <DeathScreen
+        <EnhancedDeathScreen
           score={deathStats.score}
           length={deathStats.length}
           rank={deathStats.rank}
           totalPlayers={players.length}
           gameLength={deathStats.gameLength}
+          playerId={gameState.playerId}
+          playerName={playerName}
+          gameId={gameId}
           onRestart={handleRestart}
         />
       )}
+      <Toaster />
     </div>
   );
 }

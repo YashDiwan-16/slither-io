@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { RotateCcw } from 'lucide-react';
-import RewardSystem from './RewardSystem';
+import { toast } from 'sonner';
+import EnhancedRewardSystem from './EnhancedRewardSystem';
 
 interface DeathScreenProps {
   score: number;
@@ -8,6 +9,9 @@ interface DeathScreenProps {
   rank: number;
   totalPlayers?: number;
   gameLength?: number;
+  playerId: string;
+  playerName: string;
+  gameId: string;
   onRestart: () => void;
 }
 
@@ -17,53 +21,65 @@ export default function DeathScreen({
   rank, 
   totalPlayers = 10,
   gameLength = 60,
+  playerId,
+  playerName,
+  gameId,
   onRestart 
 }: DeathScreenProps) {
   const [showRewards, setShowRewards] = useState(true);
 
+  const handleRewardClaimed = () => {
+    toast.success('🎉 Reward claimed successfully!', {
+      description: 'SOL has been transferred to your wallet',
+      duration: 4000,
+    });
+    setShowRewards(false);
+  };
+
   return (
-    <div className="absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-      <div className="bg-black/80 backdrop-blur-lg rounded-2xl p-8 w-full max-w-md border border-white/20 text-center">
-        <div className="mb-6">
-          <div className="text-6xl mb-4">💀</div>
-          <h2 className="text-3xl font-bold text-white mb-2">Game Over!</h2>
-          <p className="text-gray-300">Your snake has been eliminated</p>
+    <div className="absolute inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-2 z-50">
+      <div className="bg-black/85 backdrop-blur-lg rounded-lg p-2 w-full max-w-[280px] border border-white/20 text-center">
+        <div className="mb-2">
+          <div className="text-2xl mb-1">💀</div>
+          <h2 className="text-base font-bold text-white mb-0.5">Game Over!</h2>
+          <p className="text-gray-400 text-xs">Snake eliminated</p>
         </div>
 
-        {showRewards ? (
-          <div className="mb-6">
-            <RewardSystem
+        <div className="mb-2 space-y-0.5 bg-white/5 rounded p-2">
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-400">Score</span>
+            <span className="text-white font-semibold">{score.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-400">Length</span>
+            <span className="text-white font-semibold">{length}</span>
+          </div>
+          <div className="flex justify-between items-center text-xs">
+            <span className="text-gray-400">Rank</span>
+            <span className="text-yellow-400 font-semibold">#{rank}/{totalPlayers}</span>
+          </div>
+        </div>
+
+        {showRewards && (
+          <div className="mb-2">
+            <EnhancedRewardSystem
+              playerId={playerId}
+              playerName={playerName}
               score={score}
               rank={rank}
               totalPlayers={totalPlayers}
               gameLength={gameLength}
-              onRewardClaimed={() => setShowRewards(false)}
+              gameId={gameId}
+              onRewardClaimed={handleRewardClaimed}
             />
-          </div>
-        ) : (
-          <div className="bg-white/5 rounded-lg p-6 mb-6 space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-gray-300">Final Score:</span>
-              <span className="text-white font-bold text-xl">{score}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-300">Length:</span>
-              <span className="text-white font-bold">{length}</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="text-gray-300">Rank:</span>
-              <span className="text-yellow-400 font-bold flex items-center gap-1">
-                🏆 #{rank}
-              </span>
-            </div>
           </div>
         )}
 
         <button
           onClick={onRestart}
-          className="w-full bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 text-white font-bold py-3 px-6 rounded-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-1.5 px-3 rounded text-xs transition-all duration-200 flex items-center justify-center gap-1.5"
         >
-          <RotateCcw className="w-5 h-5" />
+          <RotateCcw size={12} />
           Play Again
         </button>
       </div>
