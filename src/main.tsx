@@ -4,6 +4,11 @@ import App from './App.tsx';
 import './index.css';
 import WalletConnectionProvider from './providers/WalletConnectionProvider';
 import { Web3Provider } from './providers/Web3Provider';
+import { Buffer } from 'buffer';
+
+if (!(window as any).Buffer) {
+  (window as any).Buffer = Buffer;
+}
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
