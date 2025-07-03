@@ -9,6 +9,7 @@ import EnhancedDeathScreen from './components/EnhancedDeathScreen';
 import WalletStatus from './components/WalletStatus';
 import RewardPoolStatus from './components/RewardPoolStatus';
 import AchievementSystem from './components/AchievementSystem';
+import GameSettings from './components/GameSettings';
 import { useGameLoop } from './hooks/useGameLoop';
 import { GameState, Snake, Player, Orb } from './types/game';
 import {
@@ -49,6 +50,8 @@ function App() {
   // New state for reward system
   const [playerName, setPlayerName] = useState('');
   const [gameId, setGameId] = useState('');
+  const [difficulty, setDifficulty] = useState<'easy' | 'hard'>('easy');
+  const [showSettings, setShowSettings] = useState(false);
 
   // FIXED: Better mouse direction tracking
   const mouseDirection = useRef({ x: 0, y: 0, angle: 0 });
@@ -141,7 +144,7 @@ function App() {
 
         // Update camera to follow player smoothly
         const head = playerSnake.segments[0];
-        const lerpFactor = Math.min(deltaTime * 5, 1); // Smooth camera following
+        const lerpFactor = Math.min(deltaTime * 3, 0.15); // Smoother, capped
         newState.camera.x += (head.x - newState.camera.x) * lerpFactor;
         newState.camera.y += (head.y - newState.camera.y) * lerpFactor;
       }
@@ -150,10 +153,13 @@ function App() {
       newState.snakes.forEach(snake => {
         if (snake.id !== newState.playerId && snake.alive) {
           const head = snake.segments[0];
-          let targetDirection = snake.direction + (Math.random() - 0.5) * 0.3;
-
-          // Find nearest orb with better AI logic
-          let nearestOrb: Orb | null = null;
+          // Difficulty-based parameters
+          const aiParams = difficulty === 'easy' ?
+            { reaction: 0.5, boostChance: 0.02, mistakeChance: 0.1, orbError: 0.3 } :
+            { reaction: 1, boostChance: 0.1, mistakeChance: 0.01, orbError: 0.05 };
+          let targetDirection = snake.direction + (Math.random() - 0.5) * 0.3 * aiParams.reaction;
+          // Find nearest orb with error
+          let nearestOrb = null;
           let nearestDistance = Infinity;
           for (const orb of newState.orbs) {
             const distance = Math.sqrt((orb.x - head.x) ** 2 + (orb.y - head.y) ** 2);
@@ -162,28 +168,29 @@ function App() {
               nearestOrb = orb;
             }
           }
-
           if (nearestOrb) {
-            targetDirection = Math.atan2(nearestOrb.y - head.y, nearestOrb.x - head.x);
+            // Add error to orb targeting
+            const error = (Math.random() - 0.5) * aiParams.orbError * 2 * Math.PI;
+            targetDirection = Math.atan2(nearestOrb.y - head.y, nearestOrb.x - head.x) + error;
           }
-
+          // Occasionally make a mistake
+          if (Math.random() < aiParams.mistakeChance) {
+            targetDirection += (Math.random() - 0.5) * Math.PI;
+          }
           // Avoid other snakes
           newState.snakes.forEach(otherSnake => {
             if (otherSnake.id === snake.id || !otherSnake.alive) return;
-            
             otherSnake.segments.forEach(segment => {
               const distance = Math.sqrt((segment.x - head.x) ** 2 + (segment.y - head.y) ** 2);
-              if (distance < 80) {
+              if (distance < 80 * aiParams.reaction) {
                 const avoidAngle = Math.atan2(head.y - segment.y, head.x - segment.x);
                 targetDirection = avoidAngle;
               }
             });
           });
-
-          updateSnakeMovement(snake, targetDirection, deltaTime);
-          
+          updateSnakeMovement(snake, targetDirection, deltaTime * aiParams.reaction);
           // AI boost logic
-          snake.boost = Math.random() < 0.1 && snake.boostEnergy > 50;
+          snake.boost = Math.random() < aiParams.boostChance && snake.boostEnergy > 50;
         }
       });
 
@@ -297,7 +304,7 @@ function App() {
       <GameUI
         playerSnake={currentPlayer || null}
         onShowChat={() => {}}
-        onShowSettings={() => {}}
+        onShowSettings={() => setShowSettings(true)}
       />
       
       <Leaderboard players={players} currentPlayerId={gameState.playerId} />
@@ -322,6 +329,13 @@ function App() {
           playerName={playerName}
           gameId={gameId}
           onRestart={handleRestart}
+        />
+      )}
+      {showSettings && (
+        <GameSettings
+          onClose={() => setShowSettings(false)}
+          difficulty={difficulty}
+          setDifficulty={setDifficulty}
         />
       )}
       <Toaster />

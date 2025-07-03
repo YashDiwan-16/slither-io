@@ -4,9 +4,11 @@ import WalletManager from './WalletManager';
 
 interface GameSettingsProps {
   onClose: () => void;
+  difficulty: 'easy' | 'hard';
+  setDifficulty: (d: 'easy' | 'hard') => void;
 }
 
-export default function GameSettings({ onClose }: GameSettingsProps) {
+export default function GameSettings({ onClose, difficulty, setDifficulty }: GameSettingsProps) {
   const [activeTab, setActiveTab] = useState<'wallet' | 'audio' | 'about'>('wallet');
 
   return (
@@ -114,6 +116,26 @@ export default function GameSettings({ onClose }: GameSettingsProps) {
                 </div>
                 <div className="text-xs text-blue-300">
                   Built with React, TypeScript, and Solana Web3.js
+                </div>
+              </div>
+              <div className="mt-6">
+                <h3 className="text-white font-semibold mb-3">Game Difficulty</h3>
+                <div className="flex gap-2">
+                  <button
+                    className={`px-4 py-2 rounded-lg font-bold transition-all duration-150 ${difficulty === 'easy' ? 'bg-green-500 text-white' : 'bg-gray-700 text-gray-300'}`}
+                    onClick={() => setDifficulty('easy')}
+                  >
+                    Easy
+                  </button>
+                  <button
+                    className={`px-4 py-2 rounded-lg font-bold transition-all duration-150 ${difficulty === 'hard' ? 'bg-red-500 text-white' : 'bg-gray-700 text-gray-300'}`}
+                    onClick={() => setDifficulty('hard')}
+                  >
+                    Hard
+                  </button>
+                </div>
+                <div className="text-xs text-gray-400 mt-2">
+                  Easy: Bots are slower, make mistakes, and boost less. Hard: Bots are more challenging.
                 </div>
               </div>
             </div>
