@@ -143,12 +143,6 @@ Pull requests are welcome! For major changes, please open an issue first to disc
 
 ---
 
-## 📄 License
-
-[MIT](LICENSE)
-
----
-
 ## 🙌 Credits
 
 - Inspired by the original [Slither.io](https://slither.io/)
