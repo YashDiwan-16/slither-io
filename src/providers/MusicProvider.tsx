@@ -50,7 +50,7 @@ export const MusicProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     <MusicContext.Provider value={{ playing, toggle: () => setPlaying(p => !p), setVolume, volume }}>
       <audio
         ref={audioRef}
-        src={import.meta.env.BASE_URL + 'assets/bg-sound.mp3'}
+        src={'/assets/bg-sound.mp3'}
         loop
         preload="auto"
         style={{ display: 'none' }}
